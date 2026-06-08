@@ -1,41 +1,69 @@
 ﻿#ifndef SORTING_H
 #define SORTING_H
 
-#include <algorithm>
-#include <utility>
+// Header-only
 
+// Для swap
+#include "collvalue.h"
+#include <iterator>
+
+// ----------------------------- Пузырёк (например) --------------------------------------
 template <typename Iterator>
-void bubble_sort(Iterator begin, Iterator end) {
+void bubble_sort(Iterator begin, Iterator end)
+{
     if (begin == end) return;
-    bool swapped;
-    do {
-        swapped = false;
-        Iterator it = begin;
-        for (Iterator next = begin; ++next != end; ++it) {
-            if (*next < *it) {
-                std::swap(*it, *next);
+
+    for (auto i = begin; i != end; ++i)
+    {
+        bool swapped = false;
+        auto limit = end;
+        for (auto j = begin; j != limit; ++j)
+        {
+            auto next = std::next(j);
+            if (next == limit) break;
+
+            if (*next < *j)
+            {
+                using std::swap;
+                swap(*j, *next);
                 swapped = true;
             }
         }
-    } while (swapped);
+        if (!swapped) break;
+    }
 }
 
+
+// --------------------------- QuickSort (например) ---------------------------------------
 template <typename Iterator>
-void quick_sort(Iterator begin, Iterator end) {
-    if (end - begin <= 1) return;
-    Iterator pivot = begin + (end - begin) / 2;
-    std::swap(*pivot, *(end - 1));
-    pivot = end - 1;
-    Iterator left = begin;
-    for (Iterator right = begin; right != pivot; ++right) {
-        if (*right < *pivot) {
-            std::swap(*left, *right);
-            ++left;
+void quick_sort(Iterator begin, Iterator end)
+{
+    if (begin == end) return;
+    if (std::next(begin) == end) return;
+
+    auto pivot_iter = std::prev(end);
+    auto pivot_value = *pivot_iter;
+    auto i = begin;
+
+    for (auto j = begin; j != pivot_iter; ++j)
+    {
+        if (*j < pivot_value)
+        {
+            if (i != j)
+            {
+                using std::swap;
+                swap(*i, *j);
+            }
+            ++i;
         }
     }
-    std::swap(*left, *pivot);
-    quick_sort(begin, left);
-    quick_sort(left + 1, end);
+
+    using std::swap;
+    swap(*i, *pivot_iter);
+
+    // Рекурсивно сортируем левую и правую части
+    quick_sort(begin, i);
+    quick_sort(std::next(i), end);
 }
 
-#endif
+#endif // SORTING_H
