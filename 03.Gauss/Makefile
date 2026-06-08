@@ -1,28 +1,26 @@
-#!/bin/bash
+CXX_EXTRA_FLAGS=-I ../external/lazycsv/include -I ../external/eigen $(shell pkgconf --cflags openblas)
+LD_EXTRA_OPT=$(pkgconf --libs openblas)
 
-status=true
-SOLVER="./gauss"
+include ../Makefile.inc
 
-INPUT_CSV="itest_in.csv"
-OUTPUT_CSV="itest_out.csv"
-EXPECTED_CSV="itest_exp.csv"
+release : gauss
 
-echo "A,B,C" > $INPUT_CSV
-echo "2,1,5" >> $INPUT_CSV
-echo "1,-1,1" >> $INPUT_CSV
+gauss  : util.r.o Gauss_main.r.o Gauss_solve.r.o
+	$(LD) -fopenmp -o $@ $^ $(LD_EXTRA_OPT)
 
-echo "A,B" > $EXPECTED_CSV
-echo "2.000000" >> $EXPECTED_CSV
-echo "1.000000" >> $EXPECTED_CSV
+debug   : util.d.o Gauss_main.d.o Gauss_solve.d.o
+	$(LD) -fopenmp -o $@ $^ $(LD_EXTRA_OPT)
 
-$SOLVER $INPUT_CSV > $OUTPUT_CSV 2>/dev/null
+utest   : Gauss_test.d.o util.d.o Gauss_solve.d.o
+	$(LD) -fopenmp -o $@ $^ $(GTEST_LIBS)
 
-if ! cmp -s "$OUTPUT_CSV" "$EXPECTED_CSV"; then
-    status=false
-    echo "Integration test: FAILED"
-else
-    echo "Integration test: PASSED"
-fi
+run_utest : utest
+	./$^
 
-rm -f $INPUT_CSV $OUTPUT_CSV $EXPECTED_CSV
-$status
+run_itest : release
+	echo "Integration tests..."
+	./integration_test.sh
+
+all: depends run_utest run_itest
+
+include Makefile.hdrdep
