@@ -1,67 +1,73 @@
 #include <gtest/gtest.h>
+
+#include <unistd.h>
+#include <sys/wait.h>
 #include <vector>
 #include <cstdint>
+#include <stdexcept>
+#include <string.h>
+
 #include "base85ed.h"
 
-static std::vector<uint8_t> cstr2v(const char* s)
+const std::vector<std::pair<const char *, const char * >> short_cases =
 {
-    return std::vector<uint8_t>(s, s + std::string(s).size());
+    { "",     ""     },
+    { "F#",   "1"    },
+    { "F){",  "12"   },
+    { "F)}j", "123"  },
+    { "F)}kW","1234" }
+};
+
+static std::vector<uint8_t> cstr2v(const char *s)
+{
+    return std::vector<uint8_t>(
+               s,
+               s + std::string(s).size()
+           );
 }
 
-TEST(Base85, EncodeDecodeEmpty)
+// Тесты encode
+TEST(Base85ShortsEncode, TrivialShortEncodes)
 {
-    std::vector<uint8_t> data;
-    auto enc = base85::encode(data);
-    auto dec = base85::decode(enc);
-    EXPECT_EQ(data, dec);
-}
-
-TEST(Base85, EncodeDecodeSingleByte)
-{
-    for (int i = 0; i < 256; ++i)
+    for (const auto &p : short_cases)
     {
-        std::vector<uint8_t> data = {static_cast<uint8_t>(i)};
-        auto enc = base85::encode(data);
-        auto dec = base85::decode(enc);
-        EXPECT_EQ(data, dec);
+        EXPECT_EQ(base85::encode(cstr2v(p.second)), cstr2v(p.first));
     }
 }
 
-TEST(Base85, EncodeDecodeTwoBytes)
+// Тесты decode
+TEST(Base85ShortsDecode, TrivialShortDecodes)
 {
-    for (int a = 0; a < 256; a += 37)
+    for (const auto &p : short_cases)
     {
-        for (int b = 0; b < 256; b += 53)
-        {
-            std::vector<uint8_t> data = {static_cast<uint8_t>(a), static_cast<uint8_t>(b)};
-            auto enc = base85::encode(data);
-            auto dec = base85::decode(enc);
-            EXPECT_EQ(data, dec);
-        }
+        EXPECT_EQ(base85::decode(cstr2v(p.first)), cstr2v(p.second));
     }
 }
 
-TEST(Base85, EncodeDecodeThreeBytes)
+TEST(Base85Diversity, BinaryData)
 {
-    for (int a = 0; a < 256; a += 31)
-    {
-        for (int b = 0; b < 256; b += 47)
-        {
-            for (int c = 0; c < 256; c += 59)
-            {
-                std::vector<uint8_t> data = {static_cast<uint8_t>(a), static_cast<uint8_t>(b), static_cast<uint8_t>(c)};
-                auto enc = base85::encode(data);
-                auto dec = base85::decode(enc);
-                EXPECT_EQ(data, dec);
-            }
-        }
-    }
+    std::vector<uint8_t> zeros = {0, 0, 0, 0};
+    EXPECT_EQ(base85::encode(zeros), cstr2v("00000"));
+    EXPECT_EQ(base85::decode(cstr2v("00000")), zeros);
+
+    std::vector<uint8_t> max_bytes = {0xFF, 0xFF, 0xFF, 0xFF};
+    std::vector<uint8_t> expected_max_b85 = {'|', 'N', 's', 'C', '0'};
+
+    EXPECT_EQ(base85::encode(max_bytes), expected_max_b85);
+    EXPECT_EQ(base85::decode(expected_max_b85), max_bytes);
 }
 
-TEST(Base85, SelfConsistent)
+TEST(Base85Diversity, ErrorHandling)
 {
-    std::vector<uint8_t> data = {'a', 'b', 'c'};
-    auto enc = base85::encode(data);
-    auto dec = base85::decode(enc);
-    EXPECT_EQ(data, dec);
+    EXPECT_THROW(base85::decode(cstr2v("F #")), std::runtime_error);
+
+    EXPECT_THROW(base85::decode(cstr2v("F")), std::runtime_error);
+
+    EXPECT_THROW(base85::decode(cstr2v("~~~~~")), std::runtime_error);
+}
+
+TEST(Base85Diversity, EmptyInput)
+{
+    EXPECT_TRUE(base85::encode({}).empty());
+    EXPECT_TRUE(base85::decode({}).empty());
 }
