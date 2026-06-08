@@ -5,7 +5,8 @@
 #include <utility>
 
 template <typename Iterator>
-void bubble_sort(Iterator begin, Iterator end) {
+void bubble_sort(Iterator begin, Iterator end)
+{
     if (begin == end) return;
     bool swapped;
     do {
@@ -21,7 +22,8 @@ void bubble_sort(Iterator begin, Iterator end) {
 }
 
 template <typename Iterator>
-void quick_sort(Iterator begin, Iterator end) {
+void quick_sort(Iterator begin, Iterator end)
+{
     if (end - begin <= 1) return;
     Iterator pivot = begin + (end - begin) / 2;
     std::swap(*pivot, *(end - 1));
