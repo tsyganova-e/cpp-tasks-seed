@@ -1,43 +1,24 @@
+#include <iostream>
+#include <string>
+#include "util.h"
 #include "Gauss_solve.h"
-#include <cmath>
 
-GaussVector Gauss_solve(GaussMatrix &ab)
+int main(int argc, const char *argv[])
 {
-    int n = ab.rows();
-    int m = ab.cols();
+    if (argc < 2) return 1;
 
-    for (int i = 0; i < n; ++i)
+    auto ab = load_csv_to_matrix(argv[1]);
+    if (ab.rows() == 0) return 1;
+
+    GaussVector x = Gauss_solve(ab);
+
+    GaussMatrix x_mat(x.size(), 1);
+    for (int i = 0; i < x.size(); ++i)
     {
-        int max_row = i;
-        for (int k = i + 1; k < n; ++k)
-        {
-            if (std::abs(ab(k, i)) > std::abs(ab(max_row, i)))
-            {
-                max_row = k;
-            }
-        }
-        if (max_row != i)
-        {
-            ab.row(i).swap(ab.row(max_row));
-        }
-
-        for (int j = i + 1; j < n; ++j)
-        {
-            double factor = ab(j, i) / ab(i, i);
-            ab.row(j).tail(m - i) -= factor * ab.row(i).tail(m - i);
-        }
+        x_mat(i, 0) = x(i);
     }
 
-    GaussVector x(n);
-    for (int i = n - 1; i >= 0; --i)
-    {
-        double sum = 0.0;
-        if (i < n - 1)
-        {
-            int len = n - 1 - i;
-            sum = ab.row(i).segment(i + 1, len).dot(x.segment(i + 1, len));
-        }
-        x(i) = (ab(i, n) - sum) / ab(i, i);
-    }
-    return x;
+    print_matrix_as_csv(std::cout, x_mat, 6);
+
+    return 0;
 }
