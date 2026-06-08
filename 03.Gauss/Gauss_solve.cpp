@@ -1,47 +1,43 @@
 #include "Gauss_solve.h"
-#include <stdexcept>
 #include <cmath>
 
-GaussVector Gauss_solve(GaussMatrix &ab) {
+GaussVector Gauss_solve(GaussMatrix &ab)
+{
     int n = ab.rows();
-    if (n == 0) return GaussVector();
     int m = ab.cols();
-    if (m != n + 1) {
-        throw std::runtime_error("Расширенная матрица должна иметь n строк и n+1 столбцов");
-    }
 
-    for (int col = 0; col < n; ++col) {
-        int maxRow = col;
-        double maxVal = std::abs(ab(col, col));
-        for (int row = col + 1; row < n; ++row) {
-            if (std::abs(ab(row, col)) > maxVal) {
-                maxVal = std::abs(ab(row, col));
-                maxRow = row;
+    for (int i = 0; i < n; ++i)
+    {
+        int max_row = i;
+        for (int k = i + 1; k < n; ++k)
+        {
+            if (std::abs(ab(k, i)) > std::abs(ab(max_row, i)))
+            {
+                max_row = k;
             }
         }
-        if (maxVal < 1e-12) {
-            throw std::runtime_error("Матрица вырождена");
-        }
-        if (maxRow != col) {
-            ab.row(col).swap(ab.row(maxRow));
+        if (max_row != i)
+        {
+            ab.row(i).swap(ab.row(max_row));
         }
 
-        double pivot = ab(col, col);
-        ab.row(col) /= pivot;
-
-        for (int row = 0; row < n; ++row) {
-            if (row != col) {
-                double factor = ab(row, col);
-                if (factor != 0.0) {
-                    ab.row(row) -= factor * ab.row(col);
-                }
-            }
+        for (int j = i + 1; j < n; ++j)
+        {
+            double factor = ab(j, i) / ab(i, i);
+            ab.row(j).tail(m - i) -= factor * ab.row(i).tail(m - i);
         }
     }
 
     GaussVector x(n);
-    for (int i = 0; i < n; ++i) {
-        x(i) = ab(i, n);
+    for (int i = n - 1; i >= 0; --i)
+    {
+        double sum = 0.0;
+        if (i < n - 1)
+        {
+            int len = n - 1 - i;
+            sum = ab.row(i).segment(i + 1, len).dot(x.segment(i + 1, len));
+        }
+        x(i) = (ab(i, n) - sum) / ab(i, i);
     }
     return x;
 }

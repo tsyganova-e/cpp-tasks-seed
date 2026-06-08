@@ -1,13 +1,11 @@
-#ifndef UTIL_H
-#define UTIL_H
+#pragma once
 
-#include <Eigen/Dense>
 #include <iostream>
+#include <vector>
+#include "../external/eigen/Eigen/Dense"
 
 typedef Eigen::VectorXd GaussVector;
 typedef Eigen::Matrix<double, -1, -1, Eigen::RowMajor> GaussMatrix;
 
 GaussMatrix load_csv_to_matrix(const char *filename);
 void print_matrix_as_csv(std::ostream& out, const GaussMatrix &matrix, int prec = 6);
-
-#endif

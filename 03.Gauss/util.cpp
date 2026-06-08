@@ -1,32 +1,51 @@
 #include "util.h"
-#include <lazycsv.hpp>
 #include <string>
 #include <iomanip>
+#include "../external/lazycsv/include/lazycsv.hpp"
+#include <vector>
 
-GaussMatrix load_csv_to_matrix(const char *filename) {
-    std::vector<std::vector<double>> rows;
-    lazycsv::parser parser(filename);
-    for (const auto& row : parser) {
-        std::vector<double> r;
-        for (const auto& cell : row) {
-            r.push_back(std::stod(std::string(cell.raw())));
+GaussMatrix load_csv_to_matrix(const char *filename)
+{
+    std::vector<std::vector<double>> rcsv{};
+    {
+        lazycsv::parser parser{ filename };
+        for (const auto row : parser)
+        {
+            std::vector<double> r{};
+            for (const auto cell : row)
+            {
+                r.push_back(std::stod(std::string(cell.raw())));
+            }
+            rcsv.push_back(r);
         }
-        rows.push_back(r);
     }
-    if (rows.empty()) return GaussMatrix();
-    GaussMatrix matrix(rows.size(), rows[0].size());
-    for (size_t i = 0; i < rows.size(); ++i)
-        for (size_t j = 0; j < rows[i].size(); ++j)
-            matrix(i, j) = rows[i][j];
+
+    if (rcsv.empty()) return GaussMatrix(0, 0);
+
+    GaussMatrix matrix(rcsv.size(), rcsv[0].size());
+    for (size_t i = 0; i < rcsv.size(); ++i)
+    {
+        for (size_t j = 0; j < rcsv[i].size(); ++j)
+        {
+            matrix(i, j) = rcsv[i][j];
+        }
+    }
     return matrix;
 }
 
-void print_matrix_as_csv(std::ostream& out, const GaussMatrix &matrix, int prec) {
+void print_matrix_as_csv(std::ostream& out, const GaussMatrix &matrix, int prec)
+{
+    for (int j = 0; j < matrix.cols(); ++j) out << "A,";
+    out << "B\n";
+
     out << std::fixed << std::setprecision(prec);
-    for (int i = 0; i < matrix.rows(); ++i) {
-        for (int j = 0; j < matrix.cols(); ++j) {
-            if (j > 0) out << ',';
+
+    for (int i = 0; i < matrix.rows(); ++i)
+    {
+        for (int j = 0; j < matrix.cols(); ++j)
+        {
             out << matrix(i, j);
+            if (j < matrix.cols() - 1) out << ',';
         }
         out << '\n';
     }
